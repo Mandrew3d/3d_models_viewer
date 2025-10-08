@@ -5,17 +5,26 @@
   <title>3D Viewer</title>
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <style>
-    body { margin: 0; background: #111; display: flex; height: 100vh; }
-    model-viewer { width: 100%; height: 100%; }
+    body {
+      margin: 0;
+      background: #111;
+      display: flex;
+      height: 100vh;
+    }
+
+    model-viewer {
+      width: 100%;
+      height: 100%;
+    }
   </style>
 </head>
 <body>
   <model-viewer 
-    id="viewer"
-    src=""
-    camera-controls
-    auto-rotate
-    environment-image="neutral"
+    id="viewer" 
+    src="" 
+    camera-controls 
+    auto-rotate 
+    environment-image="neutral" 
     exposure="1">
   </model-viewer>
 
@@ -23,8 +32,9 @@
     // получаем имя модели из URL, например ?m=bike.glb
     const params = new URLSearchParams(window.location.search);
     const model = params.get('m');
+
     if (model) {
-      document.getElementById('viewer').src = ../model/${model};
+      document.getElementById('viewer').src = `../model/${model}`;
     } else {
       document.body.innerHTML = "<h2 style='color:white;margin:auto'>Не указана модель</h2>";
     }
