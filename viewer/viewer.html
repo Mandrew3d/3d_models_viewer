@@ -24,7 +24,7 @@
     const params = new URLSearchParams(window.location.search);
     const model = params.get('m');
     if (model) {
-      document.getElementById('viewer').src = `../models/${model}`;
+      document.getElementById('viewer').src = `../model/${model}`;
     } else {
       document.body.innerHTML = "<h2 style='color:white;margin:auto'>Не указана модель</h2>";
     }
