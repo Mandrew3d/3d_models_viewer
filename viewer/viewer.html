@@ -12,6 +12,8 @@
       display: flex;
       justify-content: center;
       align-items: center;
+      overflow: hidden;
+      font-family: sans-serif;
     }
 
     model-viewer {
@@ -20,6 +22,18 @@
       --poster-color: transparent;
       --progress-bar-color: #0af;
       --progress-mask: none;
+      background-color: #000;
+      --shadow-intensity: 1;
+      --shadow-softness: 1;
+      --ambient-occlusion-intensity: 1;
+      --environment-image-intensity: 1;
+    }
+
+    #placeholder {
+      color: white;
+      text-align: center;
+      font-size: 1.5em;
+      margin: auto;
     }
   </style>
 </head>
@@ -31,25 +45,34 @@
     auto-rotate
     autoplay
     shadow-intensity="1"
-    shadow-softness="0.9"
-    exposure="1.1"
+    shadow-softness="1"
+    exposure="1.2"
     environment-image="https://modelviewer.dev/shared-assets/environments/venetian_crossroads_2k.hdr"
-    skybox-image="https://modelviewer.dev/shared-assets/environments/venetian_crossroads_2k.hdr"
-    tone-mapping="aces"
-    ar
-    ar-modes="webxr scene-viewer quick-look">
+    interaction-prompt="auto"
+    style="background-color:#000;">
   </model-viewer>
+
+  <div id="placeholder" style="display:none;">Не указана модель</div>
 
   <script>
     const params = new URLSearchParams(window.location.search);
     const model = params.get('m');
     const viewer = document.getElementById('viewer');
+    const placeholder = document.getElementById('placeholder');
 
     if (model) {
       viewer.src = `../model/${model}`;
+      placeholder.style.display = "none";
+      viewer.addEventListener('error', () => {
+        placeholder.textContent = "Ошибка загрузки модели";
+        placeholder.style.display = "block";
+        viewer.style.display = "none";
+      });
     } else {
-      document.body.innerHTML = "<h2 style='color:white;margin:auto'>Не указана модель</h2>";
+      viewer.style.display = "none";
+      placeholder.style.display = "block";
     }
-  </script>
-</body>
-</html>
+
+    viewer.addEventListener('load', () => {
+      console.log('Модель успешно загружена');
+    });
