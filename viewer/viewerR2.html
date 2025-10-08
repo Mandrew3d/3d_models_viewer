@@ -25,16 +25,11 @@
     camera-controls 
     auto-rotate 
     environment-image="neutral" 
-    exposure="1"
-    shadow-intensity="1"
-    shadow-softness="0.5"
-    ar
-    reveal="auto"
-    ambient-occlusion-intensity="1"
-    ambient-occlusion-radius="0.5">
+    exposure="1">
   </model-viewer>
 
   <script>
+    // получаем имя модели из URL, например ?m=bike.glb
     const params = new URLSearchParams(window.location.search);
     const model = params.get('m');
 
