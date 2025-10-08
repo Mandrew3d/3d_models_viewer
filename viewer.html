@@ -1,19 +1,81 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>3D Models</title>
+  <title>Мои 3D модели</title>
   <style>
-    body { font-family: sans-serif; background: #111; color: #eee; padding: 20px; }
-    a { color: #5cf; text-decoration: none; display: block; margin: 8px 0; }
-    a:hover { text-decoration: underline; }
+    /* Общий стиль */
+    body {
+      font-family: 'Segoe UI', Roboto, sans-serif;
+      background: radial-gradient(circle at center, #1a1a1a, #0b0b0b);
+      color: #eee;
+      margin: 0;
+      padding: 40px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    h1 {
+      font-size: 2.2em;
+      letter-spacing: 1px;
+      margin-bottom: 40px;
+      color: #6cf;
+      text-shadow: 0 0 10px #005577;
+    }
+
+    /* Контейнер кнопок */
+    .model-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      width: 100%;
+      max-width: 800px;
+    }
+
+    /* Стили кнопок-ссылок */
+    .model-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: #222;
+      color: #fff;
+      text-decoration: none;
+      padding: 15px 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      transition: all 0.25s ease;
+      font-size: 1.1em;
+    }
+
+    .model-link:hover {
+      background: #0077cc;
+      transform: translateY(-3px);
+      box-shadow: 0 0 20px rgba(0,150,255,0.6);
+    }
+
+    .model-link span {
+      font-size: 1.4em;
+    }
+
+    footer {
+      margin-top: 60px;
+      font-size: 0.85em;
+      color: #777;
+    }
   </style>
 </head>
 <body>
-  <h1>Мои 3D модели 1.1</h1>
-  <a href="viewer/viewer.html?m=bow.glb">🚲 Bow</a>
-  <a href="viewer/viewer.html?m=zoey__fortnite_skin__fortnite_x_kpdh.glb">🗡 girl</a>
-  <a href="viewer/viewer.html?m=Car_Neznayka1.glb">🏠 car</a>
+  <h1>Мои 3D модели</h1>
+
+  <div class="model-list">
+    <a href="viewer/viewer.html?m=bow.glb" class="model-link"><span>🚲</span> Bow</a>
+    <a href="viewer/viewer.html?m=zoey__fortnite_skin__fortnite_x_kpdh.glb" class="model-link"><span>🗡</span> Girl</a>
+    <a href="viewer/viewer.html?m=Car_Neznayka1.glb" class="model-link"><span>🏠</span> Car</a>
+  </div>
+
+  <footer>© 2025 Андрей | 3D модели</footer>
 </body>
 </html>
