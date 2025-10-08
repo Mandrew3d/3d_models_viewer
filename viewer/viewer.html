@@ -5,30 +5,31 @@
   <title>3D Viewer</title>
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <style>
-    body { margin: 0; background: #111; display: flex; height: 100vh; }
+    body { margin: 0; background: #000; height: 100vh; display: flex; }
     model-viewer { width: 100%; height: 100%; }
   </style>
 </head>
 <body>
-  <model-viewer 
+  <model-viewer
     id="viewer"
-  src=""
-  camera-controls
-  auto-rotate
-  exposure="1.2"
-  shadow-intensity="1"
-  shadow-softness="0.8"   
-  tone-mapping="ACES"
-  skybox-image="https://cdn.jsdelivr.net/gh/google/model-viewer@v3.3.0/assets/neutral.hdr"
-  alt="3D model">
+    src=""
+    camera-controls
+    auto-rotate
+    shadow-intensity="1"
+    shadow-softness="0.9"
+    tone-mapping="ACES"
+    exposure="1.1"
+    environment-image="https://cdn.jsdelivr.net/gh/google/model-viewer@v3.3.0/assets/neutral.hdr"
+    skybox-image="https://cdn.jsdelivr.net/gh/google/model-viewer@v3.3.0/assets/neutral.hdr"
+    alt="3D model">
   </model-viewer>
 
   <script>
-    // получаем имя модели из URL, например ?m=bike.glb
     const params = new URLSearchParams(window.location.search);
     const model = params.get('m');
+    const viewer = document.getElementById('viewer');
     if (model) {
-      document.getElementById('viewer').src = `../model/${model}`;
+      viewer.src = `../model/${model}`;
     } else {
       document.body.innerHTML = "<h2 style='color:white;margin:auto'>Не указана модель</h2>";
     }
