@@ -17,7 +17,7 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/js/loaders/GLTFLoader.js"></script>
 <script>
 const models = [
-  'model/bow.glb','test'
+  'model/bow.glb'
 ];
 
 const statusDiv = document.getElementById('status');
@@ -61,18 +61,33 @@ function animate() {
 }
 function loadModel(path) {
   if(model) scene.remove(model);
+  model = null;
+  statusDiv.style.color = "black";
   statusDiv.textContent = "Загрузка...";
   loader.load(path, function(gltf){
     model = gltf.scene;
     scene.add(model);
-    statusDiv.textContent = "";
-  }, undefined, function(error){
-    statusDiv.textContent = "Модель не найдена или ошибка загрузки!";
+    statusDiv.style.color = "green";
+    statusDiv.textContent = "Готово!";
+  },
+  function(xhr){
+    if(xhr.loaded && xhr.total){
+      statusDiv.textContent = `Загрузка... (${Math.round(xhr.loaded/xhr.total*100)}%)`;
+    }
+  },
+  function(error){
+    statusDiv.style.color = "red";
+    statusDiv.textContent = "Ошибка загрузки! Проверьте путь и файл.";
+    console.error(error);
   });
 }
 
-window.onload = init;
-// Автоматически загружать модель по хэшу
+// Если есть хэш - пробуем загрузить модель по нему
+window.onload = function(){
+  init();
+  const path = location.hash.slice(1);
+  if(path) loadModel(path);
+};
 window.onhashchange = () => {
   const path = location.hash.slice(1);
   if (path) loadModel(path);
