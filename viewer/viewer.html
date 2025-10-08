@@ -3,35 +3,68 @@
 <head>
   <meta charset="UTF-8">
   <title>3D Viewer</title>
+
+  <!-- Модуль model-viewer -->
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+
   <style>
-    body { margin: 0; background: #000; height: 100vh; display: flex; }
-    model-viewer { width: 100%; height: 100%; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: #000;
+    }
+    model-viewer {
+      width: 100%;
+      height: 100%;
+      background-color: #111;
+    }
+    #back {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      border: 1px solid #555;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      text-decoration: none;
+      z-index: 10;
+    }
+    #back:hover { background: rgba(0,0,0,0.8); }
   </style>
 </head>
+
 <body>
+  <a id="back" href="index.html">← Назад</a>
+
   <model-viewer
     id="viewer"
     src=""
     camera-controls
     auto-rotate
+    ar
     shadow-intensity="1"
     shadow-softness="0.9"
     tone-mapping="ACES"
-    exposure="1.1"
-    environment-image="https://cdn.jsdelivr.net/gh/google/model-viewer@v3.3.0/assets/neutral.hdr"
-    skybox-image="https://cdn.jsdelivr.net/gh/google/model-viewer@v3.3.0/assets/neutral.hdr"
-    alt="3D model">
+    exposure="1.2"
+    environment-image="https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_08_1k.hdr"
+    skybox-image="https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_08_1k.hdr"
+    background-color="#222"
+    alt="3D модель">
   </model-viewer>
 
   <script>
+    // Получаем параметр ?m=имяфайла.glb
     const params = new URLSearchParams(window.location.search);
     const model = params.get('m');
     const viewer = document.getElementById('viewer');
+
     if (model) {
-      viewer.src = `../model/${model}`;
+      viewer.src = `models/${model}`;
     } else {
-      document.body.innerHTML = "<h2 style='color:white;margin:auto'>Не указана модель</h2>";
+      document.body.innerHTML =
+        "<h2 style='color:white;margin:auto;text-align:center;margin-top:20%'>Не указана модель</h2>";
     }
   </script>
 </body>
