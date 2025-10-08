@@ -12,11 +12,15 @@
 <body>
   <model-viewer 
     id="viewer"
-    src=""
-    camera-controls
-    auto-rotate
-    environment-image="neutral"
-    exposure="1">
+  src=""
+  camera-controls
+  auto-rotate
+  exposure="1.2"
+  shadow-intensity="1"
+  shadow-softness="0.8"           environment-image="https://cdn.jsdelivr.net/gh/google/model-viewer@v3.3.0/assets/neutral.hdr"
+  tone-mapping="ACES"
+  skybox-image="https://cdn.jsdelivr.net/gh/google/model-viewer@v3.3.0/assets/neutral.hdr"
+  alt="3D model">
   </model-viewer>
 
   <script>
