@@ -2,117 +2,131 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Babylon.js Viewer</title>
-<script src="https://cdn.babylonjs.com/babylon.js"></script>
-<script src="https://cdn.babylonjs.com/loaders/babylon.glTF2FileLoader.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Three.js GLB Viewer</title>
 <style>
-  html, body {
-    margin: 0;
-    height: 100%;
-    overflow: hidden;
-    background: radial-gradient(circle at center, #0a0a0a, #000);
-  }
-  #renderCanvas {
-    width: 100%;
-    height: 100%;
-    touch-action: none;
-  }
+  body { margin: 0; overflow: hidden; background: radial-gradient(circle at center,#0a0a0a,#000);}
+  canvas { display: block; }
   #overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: white;
-    font-family: sans-serif;
-    font-size: 1.2em;
-    background: rgba(0,0,0,0.4);
-    z-index: 10;
+    position: absolute; inset:0;
+    display: flex; align-items:center; justify-content:center;
+    color: white; font-family: sans-serif; font-size: 1.2em;
+    background: rgba(0,0,0,0.4); z-index:10;
   }
 </style>
 </head>
 <body>
-<canvas id="renderCanvas"></canvas>
 <div id="overlay">Загрузка модели...</div>
+<script type="module">
+  import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js';
+  import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/loaders/GLTFLoader.js';
+  import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/controls/OrbitControls.js';
+  import { RGBELoader } from 'https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/loaders/RGBELoader.js';
+  import { EffectComposer } from 'https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/postprocessing/EffectComposer.js';
+  import { RenderPass } from 'https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/postprocessing/RenderPass.js';
+  import { SSAOPass } from 'https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/postprocessing/SSAOPass.js';
 
-<script>
-  const canvas = document.getElementById("renderCanvas");
-  const overlay = document.getElementById("overlay");
-  const engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
+  const overlay = document.getElementById('overlay');
 
-  const scene = new BABYLON.Scene(engine);
-  scene.clearColor = new BABYLON.Color4(0,0,0,1);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 1000);
+  camera.position.set(0, 1.5, 3);
 
-  // Камера
-  const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI/2, Math.PI/3, 5, BABYLON.Vector3.Zero(), scene);
-  camera.attachControl(canvas, true);
-  camera.wheelDeltaPercentage = 0.01;
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  document.body.appendChild(renderer.domElement);
 
-  // Освещение
-  const hdrTexture = new BABYLON.HDRCubeTexture(
-    "https://playground.babylonjs.com/textures/environment.env",
-    scene,
-    512
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.05;
+
+  // HDRI
+  const rgbeLoader = new RGBELoader();
+  rgbeLoader.setDataType(THREE.FloatType);
+  rgbeLoader.load('https://threejs.org/examples/textures/equirectangular/venice_sunset_1k.hdr', function(texture){
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    pmremGenerator.compileEquirectangularShader();
+    scene.environment = pmremGenerator.fromEquirectangular(texture).texture;
+    scene.background = scene.environment;
+    texture.dispose();
+    pmremGenerator.dispose();
+  });
+
+  // Свет
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+  dirLight.position.set(5,10,7.5);
+  dirLight.castShadow = true;
+  dirLight.shadow.mapSize.width = 2048;
+  dirLight.shadow.mapSize.height = 2048;
+  dirLight.shadow.radius = 4;
+  scene.add(dirLight);
+
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+  scene.add(ambientLight);
+
+  // Пол
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(20,20),
+    new THREE.ShadowMaterial({ opacity: 0.4 })
   );
-  scene.environmentTexture = hdrTexture;
-  scene.createDefaultSkybox(hdrTexture, true, 1000, 0.3); // полупрозрачная skybox
+  ground.rotation.x = -Math.PI/2;
+  ground.receiveShadow = true;
+  scene.add(ground);
 
-  const light = new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(-1, -2, -1), scene);
-  light.intensity = 2;
-  light.position = new BABYLON.Vector3(10, 10, 10);
-  light.shadowEnabled = true;
+  // Пост-эффекты: SSAO
+  const composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  const ssaoPass = new SSAOPass(scene, camera, window.innerWidth, window.innerHeight);
+  ssaoPass.kernelRadius = 16;
+  ssaoPass.minDistance = 0.005;
+  ssaoPass.maxDistance = 0.1;
+  composer.addPass(ssaoPass);
 
-  const shadowGenerator = new BABYLON.ShadowGenerator(1024, light);
-  shadowGenerator.useBlurExponentialShadowMap = true;
-  shadowGenerator.blurKernel = 32;
-
-  // Пол для теней
-  const ground = BABYLON.MeshBuilder.CreateGround("ground", {width:10, height:10}, scene);
-  ground.receiveShadows = true;
-
-  // Загрузка модели
+  // GLB Loader
   const params = new URLSearchParams(window.location.search);
-  const modelParam = params.get("m");
-  const modelPath = modelParam ? `../model/${modelParam}` : null;
+  const modelParam = params.get('m');
+  const loader = new GLTFLoader();
 
-  async function loadModel(url) {
-    try {
-      overlay.textContent = "Загрузка модели...";
-      const result = await BABYLON.SceneLoader.AppendAsync(url, "", scene);
-      // Добавляем все меши к теням
-      scene.meshes.forEach(mesh => {
-        if (mesh.isVisible) shadowGenerator.addShadowCaster(mesh, true);
+  if(modelParam){
+    loader.load(`../model/${modelParam}`, function(gltf){
+      const model = gltf.scene;
+      model.traverse(node=>{
+        if(node.isMesh){
+          node.castShadow = true;
+          node.receiveShadow = true;
+          node.material.needsUpdate = true;
+        }
       });
-      overlay.style.display = "none";
-    } catch (e) {
-      console.error(e);
-      overlay.textContent = "Ошибка загрузки модели";
-    }
-  }
-
-  if (modelPath) {
-    loadModel(modelPath);
+      scene.add(model);
+      overlay.style.display = 'none';
+    }, function(xhr){
+      overlay.textContent = `Загрузка модели… ${Math.round(xhr.loaded/xhr.total*100)||0}%`;
+    }, function(err){
+      console.error(err);
+      overlay.textContent = 'Ошибка загрузки модели';
+    });
   } else {
-    overlay.textContent = "Не указана модель. Добавьте ?m=имя.glb";
+    overlay.textContent = 'Не указана модель. Добавьте ?m=имя.glb';
   }
 
-  // Пост-эффекты
-  const defaultPipeline = new BABYLON.DefaultRenderingPipeline("defaultPipeline", true, scene, [camera]);
-  defaultPipeline.imageProcessingEnabled = true;
-  defaultPipeline.bloomEnabled = true;
-  defaultPipeline.bloomThreshold = 0.8;
-  defaultPipeline.bloomIntensity = 0.5;
-  defaultPipeline.bloomKernel = 64;
-  defaultPipeline.bloomScale = 0.5;
-
-  engine.runRenderLoop(() => {
-    scene.render();
+  window.addEventListener('resize', ()=>{
+    camera.aspect = window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    composer.setSize(window.innerWidth, window.innerHeight);
   });
 
-  window.addEventListener("resize", () => {
-    engine.resize();
-  });
+  // Анимация
+  function animate(){
+    requestAnimationFrame(animate);
+    controls.update();
+    composer.render();
+  }
+  animate();
 </script>
 </body>
 </html>
