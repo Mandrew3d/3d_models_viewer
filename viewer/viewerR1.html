@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Three.js GLB Viewer</title>
+<style>
+body { margin: 0; overflow: hidden; background: #000; }
+canvas { display: block; }
+#overlay {
+  position: absolute; inset: 0; display:flex; align-items:center; justify-content:center;
+  color:white; font-family:sans-serif; font-size:1.2em; background: rgba(0,0,0,0.5);
+}
+</style>
+</head>
+<body>
+<div id="overlay">Загрузка модели...</div>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js';
+import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/loaders/GLTFLoader.js';
+import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/controls/OrbitControls.js';
+
+const overlay = document.getElementById('overlay');
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x000000);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 1000);
+camera.position.set(0,1.5,3);
+
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+
+// Свет
+const dirLight = new THREE.DirectionalLight(0xffffff,1);
+dirLight.position.set(5,10,7.5);
+dirLight.castShadow = true;
+scene.add(dirLight);
+
+const ambient = new THREE.AmbientLight(0xffffff,0.3);
+scene.add(ambient);
+
+// Пол
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(20,20), new THREE.ShadowMaterial({opacity:0.4}));
+ground.rotation.x = -Math.PI/2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// Загрузка модели
+const params = new URLSearchParams(window.location.search);
+const modelParam = params.get('m');
+
+if(modelParam){
+  const loader = new GLTFLoader();
+  loader.load(`../model/${modelParam}`,
+    function(gltf){
+      const model = gltf.scene;
+      model.traverse(node=>{
+        if(node.isMesh){ node.castShadow=true; node.receiveShadow=true; }
+      });
+      scene.add(model);
+      overlay.style.display='none';
+    },
+    function(xhr){ // прогресс
+      overlay.textContent = `Загрузка модели… ${Math.round((xhr.loaded/xhr.total||0)*100)}%`;
+    },
+    function(err){
+      console.error(err);
+      overlay.textContent='Ошибка загрузки модели. Проверь путь и CORS';
+    }
+  );
+} else {
+  overlay.textContent='Не указана модель. Добавьте ?m=имя.glb';
+}
+
+// Анимация
+function animate(){
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene,camera);
+}
+animate();
+
+window.addEventListener('resize', ()=>{
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Three.js — локальная модель test Car_Neznayka1</title>
+<style>
+  html,body{height:100%;margin:0;background:#000;font-family:Arial, sans-serif}
+  canvas{display:block}
+  #overlay{
+    position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    color:#fff;background:rgba(0,0,0,0.45);z-index:10
+  }
+  .row{margin:8px 0}
+  button{padding:8px 12px;border-radius:6px;border:0;cursor:pointer}
+  button.secondary{background:#333;color:#fff}
+  button.primary{background:#0af;color:#000;font-weight:700}
+  .error{color:#ff6b6b;margin-top:8px;font-weight:600}
+</style>
+</head>
+<body>
+<div id="overlay">
+  <div id="status">Инициализация…</div>
+  <div class="row">
+    <button id="btnRetry" class="secondary">Повторить локальную загрузку</button>
+    <button id="btnTest" class="primary">Загрузить тестовую модель (онлайн)</button>
+  </div>
+  <div id="err" class="error" style="display:none"></div>
+  <div style="font-size:12px;margin-top:10px;opacity:0.8">Файл: <code>model/Car_Neznayka1.glb</code></div>
+</div>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js';
+import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/loaders/GLTFLoader.js';
+import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/controls/OrbitControls.js';
+
+const STATUS = document.getElementById('status');
+const ERR = document.getElementById('err');
+const OVERLAY = document.getElementById('overlay');
+const BTN_RETRY = document.getElementById('btnRetry');
+const BTN_TEST = document.getElementById('btnTest');
+
+const canvas = document.createElement('canvas');
+document.body.appendChild(canvas);
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x000000);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.05, 1000);
+camera.position.set(0, 1.6, 3);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.07;
+
+const hemi = new THREE.HemisphereLight(0xffffff, 0x222222, 0.6);
+scene.add(hemi);
+
+const dir = new THREE.DirectionalLight(0xffffff, 1.0);
+dir.position.set(5, 10, 7);
+dir.castShadow = true;
+dir.shadow.mapSize.set(2048, 2048);
+dir.shadow.radius = 4;
+scene.add(dir);
+
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.ShadowMaterial({ opacity: 0.4 }));
+ground.rotation.x = -Math.PI/2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+const loader = new GLTFLoader();
+
+const LOCAL_PATH = 'model/Car_Neznayka1.glb';
+const TEST_MODEL = 'https://modelviewer.dev/shared-assets/models/Astronaut.glb';
+
+// утилита: подогнать камеру под объект
+function fitCameraToObject(camera, object, offset = 1.25) {
+  const box = new THREE.Box3().setFromObject(object);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+
+  const maxSize = Math.max(size.x, size.y, size.z);
+  const fitHeightDistance = maxSize / (2 * Math.atan(Math.PI * camera.fov / 360));
+  const fitWidthDistance = fitHeightDistance / camera.aspect;
+  const distance = offset * Math.max(fitHeightDistance, fitWidthDistance);
+
+  camera.position.copy(center);
+  camera.position.x += distance;
+  camera.position.y += distance * 0.25;
+  camera.position.z += distance;
+  camera.lookAt(center);
+  controls.target.copy(center);
+  controls.update();
+}
+
+// функция загрузки локального файла через fetch -> parse (даёт явный контроль и ошибки)
+async function fetchAndParseLocal(url, timeoutMs = 10000) {
+  STATUS.textContent = `Попытка загрузки локального файла: ${url}`;
+  ERR.style.display = 'none';
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    const resp = await fetch(url, { method: 'GET', signal: controller.signal });
+    clearTimeout(timeout);
+
+    if (!resp.ok) {
+      throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
+    }
+
+    const arrayBuffer = await resp.arrayBuffer();
+    STATUS.textContent = 'Парсинг GLB…';
+    return new Promise((resolve, reject) => {
+      loader.parse(arrayBuffer, '', (gltf) => resolve(gltf), (err) => reject(err));
+    });
+  } catch (err) {
+    throw err;
+  }
+}
+
+async function loadLocalThenShow() {
+  try {
+    const gltf = await fetchAndParseLocal(LOCAL_PATH, 10000);
+    showModel(gltf.scene);
+  } catch (err) {
+    console.error('Локальная загрузка failed:', err);
+    ERR.style.display = 'block';
+    ERR.textContent = `Локальная загрузка не удалась: ${err.message || err}`;
+    STATUS.textContent = 'Локальная загрузка не удалась';
+  }
+}
+
+function showModel(model) {
+  // очистка сцены от предыдущих моделей (если были)
+  const toRemove = scene.children.filter(c => c.userData.isDynamicModel);
+  toRemove.forEach(c => scene.remove(c));
+
+  model.traverse(n => {
+    if (n.isMesh) {
+      n.castShadow = true;
+      n.receiveShadow = true;
+      // на всякий случай force sRGB/linear корректность
+      if (n.material) {
+        if (Array.isArray(n.material)) n.material.forEach(m => m.needsUpdate = true);
+        else n.material.needsUpdate = true;
+      }
+    }
+  });
+
+  model.userData.isDynamicModel = true;
+  scene.add(model);
+  fitCameraToObject(camera, model, 1.4);
+  STATUS.textContent = 'Модель загружена и отображена';
+  setTimeout(() => { OVERLAY.style.display = 'none'; }, 500);
+}
+
+// fallback: загрузить тестовую модель с сети
+function loadTestModel() {
+  STATUS.textContent = 'Загрузка тестовой модели…';
+  ERR.style.display = 'none';
+  loader.load(TEST_MODEL, (gltf) => {
+    showModel(gltf.scene);
+  }, (xhr) => {
+    const pct = xhr.total ? Math.round(xhr.loaded / xhr.total * 100) : 0;
+    STATUS.textContent = `Загрузка тестовой модели… ${pct}%`;
+  }, (err) => {
+    console.error('Ошибка тестовой модели:', err);
+    ERR.style.display = 'block';
+    ERR.textContent = 'Не удалось загрузить тестовую модель (проверь интернет)';
+  });
+}
+
+// UI handlers
+BTN_RETRY.addEventListener('click', () => {
+  STATUS.textContent = 'Повтор локальной загрузки…';
+  ERR.style.display = 'none';
+  loadLocalThenShow();
+});
+BTN_TEST.addEventListener('click', loadTestModel);
+
+// автозапуск локальной загрузки
+loadLocalThenShow();
+
+// рендер
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>
