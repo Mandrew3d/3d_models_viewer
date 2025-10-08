@@ -5,74 +5,29 @@
   <title>3D Viewer</title>
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <style>
-    html, body {
-      margin: 0;
-      height: 100%;
-      background: radial-gradient(circle at center, #0a0a0a, #000);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      overflow: hidden;
-      font-family: sans-serif;
-    }
-
-    model-viewer {
-      width: 100%;
-      height: 100%;
-      --poster-color: transparent;
-      --progress-bar-color: #0af;
-      --progress-mask: none;
-      background-color: #000;
-      --shadow-intensity: 1;
-      --shadow-softness: 1;
-      --ambient-occlusion-intensity: 1;
-      --environment-image-intensity: 1;
-    }
-
-    #placeholder {
-      color: white;
-      text-align: center;
-      font-size: 1.5em;
-      margin: auto;
-    }
+    body { margin: 0; background: #111; display: flex; height: 100vh; }
+    model-viewer { width: 100%; height: 100%; }
   </style>
 </head>
 <body>
-  <model-viewer
+  <model-viewer 
     id="viewer"
     src=""
     camera-controls
     auto-rotate
-    autoplay
-    shadow-intensity="1"
-    shadow-softness="1"
-    exposure="1.2"
-    environment-image="https://modelviewer.dev/shared-assets/environments/venetian_crossroads_2k.hdr"
-    interaction-prompt="auto"
-    style="background-color:#000;">
+    environment-image="neutral"
+    exposure="1">
   </model-viewer>
 
-  <div id="placeholder" style="display:none;">Не указана модель</div>
-
   <script>
+    // получаем имя модели из URL, например ?m=bike.glb
     const params = new URLSearchParams(window.location.search);
     const model = params.get('m');
-    const viewer = document.getElementById('viewer');
-    const placeholder = document.getElementById('placeholder');
-
     if (model) {
-      viewer.src = `../model/${model}`;
-      placeholder.style.display = "none";
-      viewer.addEventListener('error', () => {
-        placeholder.textContent = "Ошибка загрузки модели";
-        placeholder.style.display = "block";
-        viewer.style.display = "none";
-      });
+      document.getElementById('viewer').src = ../model/${model};
     } else {
-      viewer.style.display = "none";
-      placeholder.style.display = "block";
+      document.body.innerHTML = "<h2 style='color:white;margin:auto'>Не указана модель</h2>";
     }
-
-    viewer.addEventListener('load', () => {
-      console.log('Модель успешно загружена');
-    });
+  </script>
+</body>
+</html>
