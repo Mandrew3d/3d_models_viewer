@@ -7,16 +7,20 @@
     body { margin: 0; }
     canvas { display: block; }
     #model-list { position:fixed; top:10px; left:10px; background:#fff; z-index:10; padding:10px;}
+    #status { position:fixed; top:80px; left:10px; background:rgba(255,255,255,0.9); z-index:10; padding:10px; color:red; font-weight:bold;}
   </style>
 </head>
 <body>
 <div id="model-list"></div>
+<div id="status"></div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/js/loaders/GLTFLoader.js"></script>
 <script>
 const models = [
-  'model/bow.glb'
+  'model/bow.glb','test'
 ];
+
+const statusDiv = document.getElementById('status');
 
 // Рисуем список ссылок
 const listDiv = document.getElementById('model-list');
@@ -57,11 +61,13 @@ function animate() {
 }
 function loadModel(path) {
   if(model) scene.remove(model);
+  statusDiv.textContent = "Загрузка...";
   loader.load(path, function(gltf){
     model = gltf.scene;
     scene.add(model);
+    statusDiv.textContent = "";
   }, undefined, function(error){
-    alert('Ошибка загрузки: ' + error.message);
+    statusDiv.textContent = "Модель не найдена или ошибка загрузки!";
   });
 }
 
