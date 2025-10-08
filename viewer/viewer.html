@@ -1,33 +1,118 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>3D Viewer</title>
-  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-  <style>
-    body { margin: 0; background: #111; display: flex; height: 100vh; }
-    model-viewer { width: 100%; height: 100%; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Babylon.js Viewer</title>
+<script src="https://cdn.babylonjs.com/babylon.js"></script>
+<script src="https://cdn.babylonjs.com/loaders/babylon.glTF2FileLoader.js"></script>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    background: radial-gradient(circle at center, #0a0a0a, #000);
+  }
+  #renderCanvas {
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+  }
+  #overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-family: sans-serif;
+    font-size: 1.2em;
+    background: rgba(0,0,0,0.4);
+    z-index: 10;
+  }
+</style>
 </head>
 <body>
-  <model-viewer 
-    id="viewer"
-    src=""
-    camera-controls
-    auto-rotate
-    environment-image="neutral"
-    exposure="1">
-  </model-viewer>
+<canvas id="renderCanvas"></canvas>
+<div id="overlay">Загрузка модели...</div>
 
-  <script>
-    // получаем имя модели из URL, например ?m=bike.glb
-    const params = new URLSearchParams(window.location.search);
-    const model = params.get('m');
-    if (model) {
-      document.getElementById('viewer').src = ../model/${model};
-    } else {
-      document.body.innerHTML = "<h2 style='color:white;margin:auto'>Не указана модель</h2>";
+<script>
+  const canvas = document.getElementById("renderCanvas");
+  const overlay = document.getElementById("overlay");
+  const engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
+
+  const scene = new BABYLON.Scene(engine);
+  scene.clearColor = new BABYLON.Color4(0,0,0,1);
+
+  // Камера
+  const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI/2, Math.PI/3, 5, BABYLON.Vector3.Zero(), scene);
+  camera.attachControl(canvas, true);
+  camera.wheelDeltaPercentage = 0.01;
+
+  // Освещение
+  const hdrTexture = new BABYLON.HDRCubeTexture(
+    "https://playground.babylonjs.com/textures/environment.env",
+    scene,
+    512
+  );
+  scene.environmentTexture = hdrTexture;
+  scene.createDefaultSkybox(hdrTexture, true, 1000, 0.3); // полупрозрачная skybox
+
+  const light = new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(-1, -2, -1), scene);
+  light.intensity = 2;
+  light.position = new BABYLON.Vector3(10, 10, 10);
+  light.shadowEnabled = true;
+
+  const shadowGenerator = new BABYLON.ShadowGenerator(1024, light);
+  shadowGenerator.useBlurExponentialShadowMap = true;
+  shadowGenerator.blurKernel = 32;
+
+  // Пол для теней
+  const ground = BABYLON.MeshBuilder.CreateGround("ground", {width:10, height:10}, scene);
+  ground.receiveShadows = true;
+
+  // Загрузка модели
+  const params = new URLSearchParams(window.location.search);
+  const modelParam = params.get("m");
+  const modelPath = modelParam ? `../model/${modelParam}` : null;
+
+  async function loadModel(url) {
+    try {
+      overlay.textContent = "Загрузка модели...";
+      const result = await BABYLON.SceneLoader.AppendAsync(url, "", scene);
+      // Добавляем все меши к теням
+      scene.meshes.forEach(mesh => {
+        if (mesh.isVisible) shadowGenerator.addShadowCaster(mesh, true);
+      });
+      overlay.style.display = "none";
+    } catch (e) {
+      console.error(e);
+      overlay.textContent = "Ошибка загрузки модели";
     }
-  </script>
+  }
+
+  if (modelPath) {
+    loadModel(modelPath);
+  } else {
+    overlay.textContent = "Не указана модель. Добавьте ?m=имя.glb";
+  }
+
+  // Пост-эффекты
+  const defaultPipeline = new BABYLON.DefaultRenderingPipeline("defaultPipeline", true, scene, [camera]);
+  defaultPipeline.imageProcessingEnabled = true;
+  defaultPipeline.bloomEnabled = true;
+  defaultPipeline.bloomThreshold = 0.8;
+  defaultPipeline.bloomIntensity = 0.5;
+  defaultPipeline.bloomKernel = 64;
+  defaultPipeline.bloomScale = 0.5;
+
+  engine.runRenderLoop(() => {
+    scene.render();
+  });
+
+  window.addEventListener("resize", () => {
+    engine.resize();
+  });
+</script>
 </body>
 </html>
