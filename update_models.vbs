@@ -5,16 +5,18 @@
 Option Explicit
 
 Dim fso, htmlPath, modelPath, htmlText, modelFile, modelName
-Dim htmlFile, modelFolder, linkPattern, matches, existingLinks
-Dim newLinks, linkText, updatedHtml, openTag, closeTag
+Dim htmlFile, modelFolder, matches, existingLinks
+Dim newLinks, linkText, updatedHtml
 
 Set fso = CreateObject("Scripting.FileSystemObject")
 
+' Пути
 htmlPath = fso.BuildPath(fso.GetParentFolderName(WScript.ScriptFullName), "viewer.html")
 modelPath = fso.BuildPath(fso.GetParentFolderName(WScript.ScriptFullName), "model")
 
+' Проверки
 If Not fso.FileExists(htmlPath) Then
-  MsgBox "❌ Не найден viewer.html рядом со скриптом.", vbCritical, "Ошибка"
+  MsgBox "❌ Не найден файл viewer.html рядом со скриптом.", vbCritical, "Ошибка"
   WScript.Quit
 End If
 
@@ -55,16 +57,16 @@ For Each modelFile In modelFolder.Files
 Next
 
 If newLinks = "" Then
-  MsgBox "✅ Новых моделей нет — index.html уже актуален.", vbInformation, "Готово"
+  MsgBox "✅ Новых моделей нет — viewer.html уже актуален.", vbInformation, "Готово"
   WScript.Quit
 End If
 
-' Вставляем новые ссылки в HTML
+' Находим блок для вставки
 Dim patternOpen, patternClose, startPos, endPos
 patternOpen = InStr(htmlText, "<div id=""modelList""")
 patternClose = InStr(htmlText, "</div>")
 If patternOpen = 0 Or patternClose = 0 Then
-  MsgBox "❌ Не удалось найти блок <div id=""modelList""> в index.html", vbCritical, "Ошибка"
+  MsgBox "❌ Не найден блок <div id=""modelList""> в viewer.html", vbCritical, "Ошибка"
   WScript.Quit
 End If
 
