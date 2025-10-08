@@ -1,97 +1,19 @@
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>GLB Model Viewer</title>
+  <title>3D Models</title>
   <style>
-    body { margin: 0; }
-    canvas { display: block; }
-    #model-list { position:fixed; top:10px; left:10px; background:#fff; z-index:10; padding:10px;}
-    #status { position:fixed; top:80px; left:10px; background:rgba(255,255,255,0.9); z-index:10; padding:10px; color:red; font-weight:bold;}
+    body { font-family: sans-serif; background: #111; color: #eee; padding: 20px; }
+    a { color: #5cf; text-decoration: none; display: block; margin: 8px 0; }
+    a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
-<div id="model-list"></div>
-<div id="status"></div>
-<script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/js/loaders/GLTFLoader.js"></script>
-<script>
-const models = [
-  'model/bow.glb'
-];
-
-const statusDiv = document.getElementById('status');
-
-// Рисуем список ссылок
-const listDiv = document.getElementById('model-list');
-models.forEach(path => {
-  const link = document.createElement('a');
-  link.href = '#' + path;
-  link.innerText = path;
-  link.style.display = 'block';
-  link.onclick = (e) => {
-    e.preventDefault();
-    loadModel(path);
-  };
-  listDiv.appendChild(link);
-});
-
-// Three.js сцена
-let scene, camera, renderer, loader, model;
-function init() {
-  scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-  camera.position.z = 2;
-
-  renderer = new THREE.WebGLRenderer({antialias:true});
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  document.body.appendChild(renderer.domElement);
-
-  loader = new THREE.GLTFLoader();
-
-  const light = new THREE.HemisphereLight(0xffffff, 0x444444);
-  scene.add(light);
-
-  animate();
-}
-function animate() {
-  requestAnimationFrame(animate);
-  if(model) model.rotation.y += 0.01;
-  renderer.render(scene, camera);
-}
-function loadModel(path) {
-  if(model) scene.remove(model);
-  model = null;
-  statusDiv.style.color = "black";
-  statusDiv.textContent = "Загрузка...";
-  loader.load(path, function(gltf){
-    model = gltf.scene;
-    scene.add(model);
-    statusDiv.style.color = "green";
-    statusDiv.textContent = "Готово!";
-  },
-  function(xhr){
-    if(xhr.loaded && xhr.total){
-      statusDiv.textContent = `Загрузка... (${Math.round(xhr.loaded/xhr.total*100)}%)`;
-    }
-  },
-  function(error){
-    statusDiv.style.color = "red";
-    statusDiv.textContent = "Ошибка загрузки! Проверьте путь и файл.";
-    console.error(error);
-  });
-}
-
-// Если есть хэш - пробуем загрузить модель по нему
-window.onload = function(){
-  init();
-  const path = location.hash.slice(1);
-  if(path) loadModel(path);
-};
-window.onhashchange = () => {
-  const path = location.hash.slice(1);
-  if (path) loadModel(path);
-};
-</script>
+  <h1>Мои 3D модели</h1>
+  <a href="viewer/view.html?m=bike.glb">🚲 Bike</a>
+  <a href="viewer/view.html?m=sword.glb">🗡 Sword</a>
+  <a href="viewer/view.html?m=house.glb">🏠 House</a>
 </body>
 </html>
